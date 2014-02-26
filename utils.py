@@ -1,5 +1,6 @@
 import sys
 from PIL import Image
+import pygame
 
 
 def transparent(img, color):
