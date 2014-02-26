@@ -35,7 +35,7 @@ STAY_CROP_SEED_STEP = 0
 WALK_CROP_SEED_STEP = 1
 
 STAY_SLEEP = 0
-WALK_SLEEP = 1 / 12
+WALK_SLEEP = 1 / 10
 
 SPRITE_STAY_STEP = 0
 SPRITE_WALK_STEP = 10
@@ -48,6 +48,13 @@ crop_y = lambda seed: seed * SPRITE_HEIGHT
 
 # Image lambdas
 LEFT_WALK = lambda c: c.transpose(Image.FLIP_LEFT_RIGHT)
+
+# Control Keys
+UP_KEY = K_w
+DOWN_KEY = K_s
+LEFT_KEY = K_a
+RIGHT_KEY = K_d
+ATTACK_KEY = K_j
 
 
 def main():
@@ -78,13 +85,18 @@ def main():
         'sprite_step_x': SPRITE_STAY_STEP,
         'sprite_step_y': SPRITE_STAY_STEP,
     }
+    rtp = runtime_params
 
     actions = INIT_ACTION
 
     pygame.event.set_allowed([KEYDOWN, KEYUP, QUIT])
     
     def move_dennis():
-        cropped = utils.get_crop(dennis_bmp, (79, 79), (runtime_params['crop_pos_x'], runtime_params['crop_pos_y']))
+        cropped = utils.get_crop(
+            img=dennis_bmp,
+            size=(79, 79),
+            xy=(rtp['crop_pos_x'], rtp['crop_pos_y'])
+        )
 
         for action in actions:
             cropped = action(cropped)
@@ -95,8 +107,36 @@ def main():
             cropped.mode
         )
         clr_screen()
-        screen.blit(dennis, (runtime_params['sprite_pos_x'], runtime_params['sprite_pos_y']))
+        screen.blit(
+            dennis,
+            (rtp['sprite_pos_x'], rtp['sprite_pos_y'])
+        )
         pygame.display.update()
+
+    def transform_walking():
+        rtp['time_sleep'] = WALK_SLEEP
+        rtp['crop_seed_x'] = MIN_CROP_X_SEED
+        rtp['crop_seed_step_x'] = WALK_CROP_SEED_STEP
+
+    def walk_left():
+        rtp['sprite_step_x'] = SPRITE_WALK_STEP * (-1)
+        actions.update([LEFT_WALK])
+
+    def walk_right():
+        rtp['sprite_step_x'] = SPRITE_WALK_STEP
+        actions.discard(LEFT_WALK)
+
+    def walk_up():
+        rtp['sprite_step_y'] = SPRITE_WALK_STEP * (-1)
+
+    def walk_down():
+        rtp['sprite_step_y'] = SPRITE_WALK_STEP
+
+    def stop():
+        rtp['time_sleep'] = STAY_SLEEP
+        rtp['crop_seed_x'] = 0
+        rtp['crop_seed_step_x'] = 0
+
 
     while True:
         for event in pygame.event.get():
@@ -104,53 +144,50 @@ def main():
                 exit()
 
             if event.type == KEYDOWN:
-                runtime_params['time_sleep'] = WALK_SLEEP
-                runtime_params['crop_seed_x'] = MIN_CROP_X_SEED
-                runtime_params['crop_seed_step_x'] = WALK_CROP_SEED_STEP
+                transform_walking()
 
-                if event.key == K_RIGHT:
-                    runtime_params['sprite_step_x'] = SPRITE_WALK_STEP
-                    actions.discard(LEFT_WALK)
+                if event.key == RIGHT_KEY:
+                    walk_right()
 
-                elif event.key == K_LEFT:
-                    runtime_params['sprite_step_x'] = SPRITE_WALK_STEP * (-1)
-                    actions.update([LEFT_WALK])
+                elif event.key == LEFT_KEY:
+                    walk_left()
 
-                elif event.key == K_UP:
-                    runtime_params['sprite_step_y'] = SPRITE_WALK_STEP * (-1)
+                if event.key == UP_KEY:
+                    walk_up()
 
-                elif event.key == K_DOWN:
-                    runtime_params['sprite_step_y'] = SPRITE_WALK_STEP
+                elif event.key == DOWN_KEY:
+                    walk_down()
+
+                if event.key == ATTACK_KEY:
+                    pass
 
             elif event.type == KEYUP:
-                if event.key == K_RIGHT or event.key == K_LEFT:
-                    runtime_params['sprite_step_x'] = SPRITE_STAY_STEP
+                if event.key == RIGHT_KEY or event.key == LEFT_KEY:
+                    rtp['sprite_step_x'] = SPRITE_STAY_STEP
                 
-                elif event.key == K_UP or event.key == K_DOWN:
-                    runtime_params['sprite_step_y'] = SPRITE_STAY_STEP
+                elif event.key == UP_KEY or event.key == DOWN_KEY:
+                    rtp['sprite_step_y'] = SPRITE_STAY_STEP
                 
-                if runtime_params['sprite_step_x'] + runtime_params['sprite_step_y'] == 0:
-                    runtime_params['time_sleep'] = STAY_SLEEP
-                    runtime_params['crop_seed_x'] = 0
-                    runtime_params['crop_seed_step_x'] = 0
+                if rtp['sprite_step_x'] + rtp['sprite_step_y'] == 0:
+                    stop()
 
-        if runtime_params['crop_seed_step_x'] > 0 and runtime_params['crop_seed_x'] >= MAX_CROP_X_SEED:
-            runtime_params['crop_seed_step_x'] = WALK_CROP_SEED_STEP * (-1)
-        elif runtime_params['crop_seed_step_x'] < 0 and runtime_params['crop_seed_x'] <= MIN_CROP_X_SEED:
-            runtime_params['crop_seed_step_x'] = WALK_CROP_SEED_STEP
+        if rtp['crop_seed_step_x'] > 0 and rtp['crop_seed_x'] >= MAX_CROP_X_SEED:
+            rtp['crop_seed_step_x'] = WALK_CROP_SEED_STEP * (-1)
+        elif rtp['crop_seed_step_x'] < 0 and rtp['crop_seed_x'] <= MIN_CROP_X_SEED:
+            rtp['crop_seed_step_x'] = WALK_CROP_SEED_STEP
 
-        runtime_params['crop_seed_x'] = runtime_params['crop_seed_x'] + runtime_params['crop_seed_step_x']
-        runtime_params['crop_pos_x'] = runtime_params['crop_seed_x'] * SPRITE_WIDTH
+        rtp['crop_seed_x'] = rtp['crop_seed_x'] + rtp['crop_seed_step_x']
+        rtp['crop_pos_x'] = rtp['crop_seed_x'] * SPRITE_WIDTH
 
-        runtime_params['sprite_pos_x'] = runtime_params['sprite_pos_x'] + runtime_params['sprite_step_x']
+        rtp['sprite_pos_x'] = rtp['sprite_pos_x'] + rtp['sprite_step_x']
 
-        runtime_params['sprite_pos_y'] = runtime_params['sprite_pos_y']  + runtime_params['sprite_step_y']
+        rtp['sprite_pos_y'] = rtp['sprite_pos_y']  + rtp['sprite_step_y']
 
-        runtime_params['sprite_pos_x'] = min(runtime_params['sprite_pos_x'], SCREEN_WIDTH - 79)
-        runtime_params['sprite_pos_x'] = max(runtime_params['sprite_pos_x'], 0)
-        runtime_params['sprite_pos_y'] = min(runtime_params['sprite_pos_y'], SCREEN_HEIGHT - 90)
-        runtime_params['sprite_pos_y'] = max(runtime_params['sprite_pos_y'], 0)
-        time.sleep ( runtime_params['time_sleep'] )
+        rtp['sprite_pos_x'] = min(rtp['sprite_pos_x'], SCREEN_WIDTH - 79)
+        rtp['sprite_pos_x'] = max(rtp['sprite_pos_x'], 0)
+        rtp['sprite_pos_y'] = min(rtp['sprite_pos_y'], SCREEN_HEIGHT - 90)
+        rtp['sprite_pos_y'] = max(rtp['sprite_pos_y'], 0)
+        time.sleep ( rtp['time_sleep'] )
         move_dennis()
 
 
