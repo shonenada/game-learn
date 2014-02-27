@@ -113,8 +113,8 @@ def main():
             (rtp['sprite_pos_x'], rtp['sprite_pos_y'])
         )
         pygame.display.update()
-        
         time.sleep ( ATTACK_SLEEP )
+
         cropped = utils.get_crop(
             img=dennis_bmp,
             size=(79, 79),
@@ -125,14 +125,15 @@ def main():
             cropped.size,
             cropped.mode
         )
-        
+        clr_screen()
         screen.blit(
             dennis,
             (rtp['sprite_pos_x'], rtp['sprite_pos_y'])
         )
         pygame.display.update()
-        clr_screen()
+        
         time.sleep ( ATTACK_SLEEP )
+        clr_screen()
         move_dennis()
 
     def walk_left():
@@ -191,7 +192,7 @@ def main():
             cropped.tostring(),
             cropped.size,
             cropped.mode
-        )
+        ).convert_alpha()
         clr_screen()
         screen.blit(
             dennis,
@@ -209,7 +210,7 @@ def main():
         COLOR_DEPTH
     )
 
-    background = BLACK
+    background = WHITE
 
     # Initialize Params
     runtime_params = {
@@ -232,7 +233,7 @@ def main():
     rtp = runtime_params
 
     dennis_bmp = Image.open(SPRITE_FOLDER + 'dennis_0.bmp')
-    dennis_bmp = utils.transparent(dennis_bmp, (-1, -1, -1))
+    dennis_bmp = utils.transparent(dennis_bmp, (0, 0, 0))
 
     pygame.event.set_allowed([KEYDOWN, KEYUP, QUIT])
 
