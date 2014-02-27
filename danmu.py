@@ -14,8 +14,6 @@ y = (480 - text_surface.get_height())/2
  
 background = (0, 0, 0)
 
-print pygame.font.get_fonts()
- 
 while True:
     for event in pygame.event.get():
         if event.type == QUIT:
