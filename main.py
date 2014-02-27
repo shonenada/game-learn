@@ -9,13 +9,13 @@ from pygame.locals import *
 
 import utils
 
-SPRITE_FOLDER = 'sprites/sys/'
+SPRITE_FOLDER = './'
 
 # Settings
 CAPTION = 'Dennis Walking'
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
-MODE = 0
+MODE = HWSURFACE
 COLOR_DEPTH = 32
 
 # Sprite
@@ -48,6 +48,7 @@ ATTCK_CROP_SEED_STEP = 1
 
 STAY_SLEEP = 0
 WALK_SLEEP = 1 / 12
+ATTACK_SLEEP = 1 / 12
 
 SPRITE_STAY_STEP = 0
 SPRITE_WALK_STEP = 10
@@ -72,7 +73,15 @@ ATTACK_KEY = K_j
 MOVE_KEYS = (UP_KEY, DOWN_KEY, LEFT_KEY, RIGHT_KEY)
 
 
+STAND_CROP_OFFSET = [(0, 0)]
+WALK_CROP_OFFSET = [(4, 0), (5, 0), (6, 0), (7, 0), (6, 0), (5, 0)]
+ATTACK_CROP_OFFSET = [(0, 1), (1, 1)]
+
+
 def main():
+
+    def clr_screen():
+        screen.fill(background)
 
     def calculate_crop():
         rtp['crop_seed_x'] = rtp['crop_seed_x'] + rtp['crop_seed_step_x']
@@ -81,18 +90,58 @@ def main():
         rtp['crop_pos_y'] = crop_x(rtp['crop_seed_y'])
 
     def transform_walking():
+        rtp['loop_actions'].clear()
         rtp['loop_actions'].update([move_dennis])
         rtp['time_sleep'] = WALK_SLEEP
         rtp['crop_seed_x'] = MIN_WALK_CROP_X_SEED
         rtp['crop_seed_step_x'] = WALK_CROP_SEED_STEP
 
+    def do_attck():
+        cropped = utils.get_crop(
+            img=dennis_bmp,
+            size=(79, 79),
+            xy=(0, 80)
+        )
+        dennis = pygame.image.frombuffer(
+            cropped.tostring(),
+            cropped.size,
+            cropped.mode
+        )
+        clr_screen()
+        screen.blit(
+            dennis,
+            (rtp['sprite_pos_x'], rtp['sprite_pos_y'])
+        )
+        pygame.display.update()
+        
+        time.sleep ( ATTACK_SLEEP )
+        cropped = utils.get_crop(
+            img=dennis_bmp,
+            size=(79, 79),
+            xy=(80, 80)
+        )
+        dennis = pygame.image.frombuffer(
+            cropped.tostring(),
+            cropped.size,
+            cropped.mode
+        )
+        
+        screen.blit(
+            dennis,
+            (rtp['sprite_pos_x'], rtp['sprite_pos_y'])
+        )
+        pygame.display.update()
+        clr_screen()
+        time.sleep ( ATTACK_SLEEP )
+        move_dennis()
+
     def walk_left():
         rtp['sprite_step_x'] = SPRITE_WALK_STEP * (-1)
-        actions.update([LEFT_WALK])
+        rtp['move_dennis_actions'].update([LEFT_WALK])
 
     def walk_right():
         rtp['sprite_step_x'] = SPRITE_WALK_STEP
-        actions.discard(LEFT_WALK)
+        rtp['move_dennis_actions'].discard(LEFT_WALK)
 
     def walk_up():
         rtp['sprite_step_y'] = SPRITE_WALK_STEP * (-1)
@@ -105,57 +154,21 @@ def main():
         rtp['crop_seed_x'] = 0
         rtp['crop_seed_step_x'] = 0
 
+    def stand():
+        cropped = utils.get_crop(
+            img=dennis_bmp,
+            size=(79, 79),
+            xy=(0, 0)
+        )
 
     def walking_crop_seed_step():
         rtp['crop_seed_y'] = 0
         if rtp['crop_seed_step_x'] > 0 and rtp['crop_seed_x'] >= MAX_WALK_CROP_X_SEED:
-            rtp['crop_seed_step_x'] = WALK_CROP_SEED_STEP * (-1)
+            rtp['left_or_right'] = -1
+            rtp['crop_seed_step_x'] = WALK_CROP_SEED_STEP * rtp['left_or_right']
         elif rtp['crop_seed_step_x'] < 0 and rtp['crop_seed_x'] <= MIN_WALK_CROP_X_SEED:
-            rtp['crop_seed_step_x'] = WALK_CROP_SEED_STEP
-
-    def attcking_crop_seed_step():
-        if rtp['crop_seed_step_x'] > 0 and rtp['crop_seed_x'] >= MAX_ATTCK_CROP_X_SEED:
-            rtp['crop_seed_step_x'] = ATTCK_CROP_SEED_STEP * (-1)
-        elif rtp['crop_seed_step_x'] < 0 and rtp['crop_seed_x'] <= MIN_ATTCK_CROP_X_SEED:
-            rtp['crop_seed_step_x'] = ATTCK_CROP_SEED_STEP
-
-
-    pygame.init()
-    pygame.display.set_caption(CAPTION)
-    screen = pygame.display.set_mode(
-        (SCREEN_WIDTH, SCREEN_HEIGHT),
-        MODE,
-        COLOR_DEPTH
-    )
-
-    background = BLACK
-
-    clr_screen = lambda: screen.fill(background)
-
-    dennis_bmp = Image.open(SPRITE_FOLDER + 'louis_0.bmp')
-    dennis_bmp = utils.transparent(dennis_bmp, (-1, -1, -1))
-
-    # Initialize Params
-    runtime_params = {
-        'crop_seed_x': INIT_CROP_X_SEED,
-        'crop_seed_step_x': STAY_CROP_SEED_STEP,
-        'crop_seed_y': 0,
-        'crop_seed_step_y': 0,
-        'time_sleep': STAY_SLEEP,
-        'crop_pos_x': 0,
-        'crop_pos_y': 0,
-        'sprite_pos_x': 0,
-        'sprite_pos_y': 0,
-        'sprite_step_x': SPRITE_STAY_STEP,
-        'sprite_step_y': SPRITE_STAY_STEP,
-        'crop_seed_step_func': walking_crop_seed_step,
-        'loop_actions': set(),
-    }
-    rtp = runtime_params
-
-    actions = INIT_ACTION
-
-    pygame.event.set_allowed([KEYDOWN, KEYUP, QUIT])
+            rtp['left_or_right'] = 1
+            rtp['crop_seed_step_x'] = WALK_CROP_SEED_STEP * rtp['left_or_right']
 
     def move_dennis():
         rtp['crop_seed_step_func']()
@@ -171,7 +184,7 @@ def main():
             size=(79, 79),
             xy=(rtp['crop_pos_x'], rtp['crop_pos_y'])
         )
-        for action in actions:
+        for action in rtp['move_dennis_actions']:
             cropped = action(cropped)
 
         dennis = pygame.image.frombuffer(
@@ -185,6 +198,45 @@ def main():
             (rtp['sprite_pos_x'], rtp['sprite_pos_y'])
         )
         time.sleep ( rtp['time_sleep'] )
+        pygame.display.update()
+
+
+    pygame.init()
+    pygame.display.set_caption(CAPTION)
+    screen = pygame.display.set_mode(
+        (SCREEN_WIDTH, SCREEN_HEIGHT),
+        MODE,
+        COLOR_DEPTH
+    )
+
+    background = BLACK
+
+    # Initialize Params
+    runtime_params = {
+        'crop_seed_x': INIT_CROP_X_SEED,
+        'crop_seed_step_x': STAY_CROP_SEED_STEP,
+        'crop_seed_y': 0,
+        'crop_seed_step_y': 0,
+        'time_sleep': STAY_SLEEP,
+        'crop_pos_x': 0,
+        'crop_pos_y': 0,
+        'sprite_pos_x': 0,
+        'sprite_pos_y': 0,
+        'sprite_step_x': SPRITE_STAY_STEP,
+        'sprite_step_y': SPRITE_STAY_STEP,
+        'left_or_right': 1,
+        'crop_seed_step_func': walking_crop_seed_step,
+        'loop_actions': set(),
+        'move_dennis_actions': set(),
+    }
+    rtp = runtime_params
+
+    dennis_bmp = Image.open(SPRITE_FOLDER + 'dennis_0.bmp')
+    dennis_bmp = utils.transparent(dennis_bmp, (-1, -1, -1))
+
+    pygame.event.set_allowed([KEYDOWN, KEYUP, QUIT])
+
+    move_dennis()
 
 
     while True:
@@ -224,7 +276,6 @@ def main():
 
         for action in rtp['loop_actions']:
             action()
-        pygame.display.update()
 
 
 if __name__ == '__main__':
