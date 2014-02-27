@@ -37,3 +37,6 @@ nosetests.xml
 
 # Virtualenv Folder
 venv/
+
+# Mac
+.DS_Store
