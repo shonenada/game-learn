@@ -1,4 +1,6 @@
+from __future__ import division
 import sys
+
 from PIL import Image
 import pygame
 
@@ -13,7 +15,7 @@ def transparent(img, color):
     for w in xrange(width):
         for h in xrange(height):
             if pix[w, h] == bgcolor:
-                pix[w, h] = (255, 255, 255, 0)
+                pix[w, h] = (bgcolor[0], bgcolor[1], bgcolor[2], 0)
 
     img.format = 'png'
     return img

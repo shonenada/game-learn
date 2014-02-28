@@ -233,7 +233,7 @@ def main():
     rtp = runtime_params
 
     dennis_bmp = Image.open(SPRITE_FOLDER + 'dennis_0.bmp')
-    dennis_bmp = utils.transparent(dennis_bmp, (0, 0, 0))
+    # dennis_bmp = utils.transparent(dennis_bmp, (0, 0, 0))
 
     pygame.event.set_allowed([KEYDOWN, KEYUP, QUIT])
 
